@@ -306,12 +306,6 @@ class SAES:
         plain_text = self.decrypt(mid_text, key1)
         return plain_text
 
-    # 中间相遇攻击
-    # def MitMAttack(self, plaintext, ciphertext):
-    #     for k1 in range(0xffff):
-    #         for k2 in range(0xffff):
-    #             if self.encrypt(plaintext, k1) == self.encrypt(ciphertext, k2):
-    #                 return k1 * 65536 + k2
     def MitMAttack(self, pairs):
         # 这个字典用于存储每个明文通过k1加密后的结果
         encrypt_dicts = [{} for _ in pairs]
@@ -351,43 +345,85 @@ class SAES:
             return potential_key_pairs
         return None
 
-    def split_text(self, num):
-        return [str(hex(num))[i:i + 4] for i in range(2, len(str(num)), 4)]
+    # def split_text(self, num):
+    #     return [str(hex(num))[i:i + 4] for i in range(2, len(str(num)), 4)]
+    #
+    # def CBC_encrypt(self, longtext, key, IV):
+    #     texts = self.split_text(longtext)
+    #     mids = []
+    #     mids.append(IV)
+    #     for i in range(len(texts)):
+    #         if texts[i] != '':
+    #             txt = int(texts[i], 16)
+    #             txt = txt ^ mids[i]
+    #             mids.append(self.encrypt(txt, key))
+    #     ciphers = [hex(num)[2:] for num in mids[1:]]
+    #     cipher = ''.join(ciphers)
+    #     ciphertext = int(cipher, 16)
+    #     return ciphertext
+    #
+    # def CBC_decrypt(self, longcipher, key, IV):
+    #     cipher_parts = self.split_text(longcipher)
+    #     cipher_parts = cipher_parts[::-1]
+    #     cipher_parts.append(hex(IV))
+    #     mids = []
+    #     for i in range(len(cipher_parts) - 1):
+    #         if cipher_parts[i] != '':
+    #             cpr = int(cipher_parts[i], 16)
+    #             mid_txt = self.decrypt(cpr, key)
+    #             mid_txt = mid_txt ^ int(cipher_parts[i + 1], 16)
+    #             mids.append(mid_txt)
+    #     retext = [hex(num)[2:] for num in mids]
+    #     retext = retext[::-1]
+    #     plaintext = ''.join(retext)
+    #     plaintext = int(plaintext, 16)
+    #     return plaintext
+    def split_blocks(self, long_data):
+        blocks = []
+        while long_data:
+            blocks.append(long_data & 0xFFFF)
+            long_data >>= 16
+        return blocks[::-1]
 
-    def CBC_encrypt(self, longtext, key, IV):
-        texts = self.split_text(longtext)
-        mids = []
-        mids.append(IV)
-        for i in range(len(texts)):
-            if texts[i] != '':
-                txt = int(texts[i], 16)
-                txt = txt ^ mids[i]
-                mids.append(self.encrypt(txt, key))
-        ciphers = [hex(num)[2:] for num in mids[1:]]
-        cipher = ''.join(ciphers)
-        ciphertext = int(cipher, 16)
-        return ciphertext
+    def combine_blocks(self, blocks):
+        combined = 0
+        for block in blocks:
+            combined <<= 16
+            combined |= block
+        return combined
 
-    def CBC_decrypt(self, longcipher, key, IV):
-        cipher_parts = self.split_text(longcipher)
-        cipher_parts = cipher_parts[::-1]
-        cipher_parts.append(hex(IV))
-        mids = []
-        for i in range(len(cipher_parts) - 1):
-            if cipher_parts[i] != '':
-                cpr = int(cipher_parts[i], 16)
-                mid_txt = self.decrypt(cpr, key)
-                mid_txt = mid_txt ^ int(cipher_parts[i + 1], 16)
-                mids.append(mid_txt)
-        retext = [hex(num)[2:] for num in mids]
-        retext = retext[::-1]
-        plaintext = ''.join(retext)
-        plaintext = int(plaintext, 16)
-        return plaintext
+    def CBC_encrypt(self, plaintext, key, iv):
+        blocks = self.split_blocks(plaintext)
+        encrypted_blocks = []
+        previous_ciphertext = iv
+
+        for block in blocks:
+            block = block ^ previous_ciphertext
+            encrypted_block = self.encrypt(block, key)
+            encrypted_blocks.append(encrypted_block)
+            previous_ciphertext = encrypted_block
+
+        return self.combine_blocks(encrypted_blocks)
+
+    def CBC_decrypt(self, ciphertext, key, iv):
+        blocks = self.split_blocks(ciphertext)
+        decrypted_blocks = []
+        previous_ciphertext = iv
+
+        for block in blocks:
+            # 保存当前的密文块，因为我们之后需要它
+            current_ciphertext = block
+            decrypted_block = self.decrypt(block, key)
+            block = decrypted_block ^ previous_ciphertext
+            decrypted_blocks.append(block)
+            # 更新previous_ciphertext为当前的密文块
+            previous_ciphertext = current_ciphertext
+
+        return self.combine_blocks(decrypted_blocks)
 
 
 if __name__ == "__main__":
-    # print("Encrypting 0x0f0f with key 0x2D55")
+    print("Encrypting 0x0f0f with key 0x2D55")
     saes = SAES()
     # ciphertext = saes.encrypt(0x0f0f, 0x2D55)
     # print("Ciphertext: ", hex(ciphertext))
@@ -403,29 +439,13 @@ if __name__ == "__main__":
     # # 明文：0000111100001111，密钥：0010110101010101
     # plaintext = 0x0f0f
     # key = 0x2D55
+    #
     # saes = SAES()
     # ciphertext = saes.encrypt(plaintext, key)
     # plaintext = saes.decrypt(ciphertext, key)
     # print("Ciphertext: ", bin(ciphertext))
     # print("Plaintext: ", bin(plaintext))
-    #
-    # # 加密函数 saes.encrypt(text, key)
-    # # 解密函数 saes.decrypt(cipher, key)
-    # plaintext = 0x0f00
-    # double_key = 0x0000214a
-    # cipher = saes.double_encrypt(plaintext, double_key)
-    # retext = saes.double_decrypt(cipher, double_key)
-    # print("double_encrypt_ciphertext:", hex(cipher))
-    # print("double_decrypt_plaintext:", hex(retext))
-    # # key = saes.MitMAttack(plaintext, cipher)
-    # # print(hex(key))
-    # tri_key = 0x111122223333
-    # tcipher = saes.tri_encrypt(plaintext, tri_key)
-    # tretext = saes.tri_decrypt(tcipher, tri_key)
-    # print("tri_encrypt_ciphertext:", hex(tcipher))
-    # print("tri_decrypt_plaintext:", hex(tretext))
-    # print()
-    #
+
     # import random
     #
     # plaintext = 0xf0ff123456789abcdef130b34e8a207d
@@ -437,8 +457,8 @@ if __name__ == "__main__":
     # print(hex(cipher))
     # retext = saes.CBC_decrypt(cipher, key, IV)
     # print(hex(retext))
-    # saes = SAES()
-    # # 生成明密文对
+    saes = SAES()
+    # 生成明密文对
     plaintext1 = 0x0f01
     key1 = 0xcd55
     key2 = 0xcd55
@@ -455,17 +475,16 @@ if __name__ == "__main__":
     ciphertext3 = saes.double_encrypt(plaintext3, key1, key2)
     print("double_encrypt_ciphertext3:", hex(ciphertext3))
 
-    # 创建明密文对列表
-    pairs = [
-        {'plaintext': plaintext1, 'ciphertext': ciphertext1},
-        {'plaintext': plaintext2, 'ciphertext': ciphertext2},
-        {'plaintext': plaintext3, 'ciphertext': ciphertext3}
-    ]
-
-    # 调用MitMAttack
-    recovered_keys = saes.MitMAttack(pairs)
-    print(len(recovered_keys))
-    for key in recovered_keys:
-        print("Recovered key: ", hex(key[0]), hex(key[1]))
-        print("Recovered key: ", bin(key[0]), bin(key[1]))
-
+    # # 创建明密文对列表
+    # pairs = [
+    #     {'plaintext': plaintext1, 'ciphertext': ciphertext1},
+    #     {'plaintext': plaintext2, 'ciphertext': ciphertext2},
+    #     {'plaintext': plaintext3, 'ciphertext': ciphertext3}
+    # ]
+    #
+    # # 调用MitMAttack
+    # recovered_keys = saes.MitMAttack(pairs)
+    # print(len(recovered_keys))
+    # for key in recovered_keys:
+    #     print("Recovered key: ", hex(key[0]), hex(key[1]))
+    #     print("Recovered key: ", bin(key[0]), bin(key[1]))

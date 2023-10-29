@@ -32,6 +32,7 @@ $(document).ready(function () {
             $('#emptyToast').toast('show');
             return;
         }
+        $("#spinnerOverlay").show();
         $.ajax({
             url: '/api/crack',
             type: 'POST',
@@ -52,9 +53,13 @@ $(document).ready(function () {
                     } else {
                         $("#crackResult").append('<li class="list-group-item">没有找到匹配的密钥对。</li>');
                     }
+                    // 隐藏Spinner
+                    $("#spinnerOverlay").hide();
                 } else {
                     // 显示错误信息或其他提示信息
                     $("#crackResult").append('<li class="list-group-item">' + response.message + '</li>');
+                    // 隐藏Spinner
+                    $("#spinnerOverlay").hide();
                 }
 
                 // 显示用时
@@ -64,6 +69,8 @@ $(document).ready(function () {
                 console.log(error);
                 // 显示一些错误信息，告知用户请求失败
                 $("#crackResult").append('<li class="list-group-item">请求失败，请重试。</li>');
+                // 隐藏Spinner
+                $("#spinnerOverlay").hide();
             }
         });
     });

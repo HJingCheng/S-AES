@@ -4,14 +4,14 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from SAES import SAES
 
 app = Flask(__name__)
-app.secret_key = "123456789"
+app.secret_key = "1adbv2s3d4f5g6h7j8k9l0"
 
 saes = SAES()  # 创建SAES对象
 
 
 @app.route('/')
 def index():
-    return render_template('test.html')
+    return render_template('index.html')
 
 
 @app.route('/api/encrypt', methods=['POST'])
@@ -171,7 +171,6 @@ def api_cbc_encrypt():
     longtext = int(data['longtext'], 16)
     key = int(data['key'], 16)
     IV = int(data['IV'], 16)
-    print(hex(longtext), hex(key), hex(IV))
     encrypted = saes.CBC_encrypt(longtext, key, IV)
     return jsonify({
         "encrypted": hex(encrypted)

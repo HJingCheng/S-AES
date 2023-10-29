@@ -6,173 +6,346 @@
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/bootstrap-icon.css" rel="stylesheet">
     <script src="/static/js/jquery.min.js"></script>
+    <style>
+        .nav-tabs .nav-link {
+            color: #6c757d;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #007bff;
+        }
+
+    </style>
 </head>
 <body>
-
 <div class="container mt-5">
-    <h1 class="text-center">SAES 加密/解密</h1>
-    <div class="section mb-4">
-        <h3>加解密</h3>
-        <div class="row mt-4">
-            <!-- 加密类型选择：比特、ASCII、双加密、三加密 -->
-            <div class="col-md-12">
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="encryptionType" id="bitEncrypt" value="bit"
-                           checked>
-                    <label class="form-check-label" for="bitEncrypt">Bits</label>
+    <h1 class="text-center">S-AES 加密/解密</h1>
+
+    <!-- 导航栏开始 -->
+    <ul class="nav nav-tabs mt-4" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link active" id="encrypt-tab" data-bs-toggle="tab" href="#encrypt" role="tab">
+                <i class="bi bi-lock"></i> 加解密
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" id="crack-tab" data-bs-toggle="tab" href="#crack" role="tab">
+                <i class="bi bi-tools"></i> 破解
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" id="cbc-tab" data-bs-toggle="tab" href="#cbcMode" role="tab">
+                <i class="bi bi-layers-fill"></i> CBC模式 - S-AES加密/解密
+            </a>
+        </li>
+    </ul>
+
+    <!-- 导航栏结束 -->
+
+    <!-- Tab内容开始 -->
+    <div class="tab-content" id="myTabContent">
+        <!-- 加解密部分 -->
+        <div class="tab-pane fade show active" id="encrypt" role="tabpanel">
+            <div class="section mb-4" style="margin-top: 30px">
+                <div class="row mt-4">
+                    <!-- 加密类型选择：16进制、ASCII、双加密、三加密 -->
+                    <div class="col-md-12">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="encryptionType" id="bitEncrypt"
+                                   value="bit"
+                                   checked>
+                            <label class="form-check-label" for="bitEncrypt">十六进制</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="encryptionType" id="asciiEncrypt"
+                                   value="ascii">
+                            <label class="form-check-label" for="asciiEncrypt">ASCII</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="encryptionType" id="doubleEncrypt"
+                                   value="double">
+                            <label class="form-check-label" for="doubleEncrypt">双重加密</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="encryptionType" id="triEncrypt"
+                                   value="tri">
+                            <label class="form-check-label" for="triEncrypt">三重加密</label>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="encryptionType" id="asciiEncrypt" value="ascii">
-                    <label class="form-check-label" for="asciiEncrypt">ASCII</label>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <input type="text" class="form-control" id="keyInput" placeholder="请输入密钥">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text"><i class="bi bi-text-left"></i></span>
+                            <input type="text" class="form-control" id="textInput"
+                                   placeholder="请输入bit或者字符">
+                        </div>
+                    </div>
                 </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="encryptionType" id="doubleEncrypt"
-                           value="double">
-                    <label class="form-check-label" for="doubleEncrypt">双重加密</label>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <button id="encryptBtn" class="btn btn-primary"><i class="bi bi-lock-fill"></i> 加密</button>
+                    </div>
+                    <div class="col-md-6">
+                        <button id="decryptBtn" class="btn btn-secondary"><i class="bi bi-unlock-fill"></i> 解密
+                        </button>
+                    </div>
                 </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="encryptionType" id="triEncrypt" value="tri">
-                    <label class="form-check-label" for="triEncrypt">三重加密</label>
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <p><i class="bi bi-stars" style="color: #b95ef6; font-size: 18px; padding-right: 10px;"></i>
+                            结果（十六进制或字符）</p>
+                    </div>
+                    <div class="card-body" id="outputAreaCard">
+                        <p id="outputText"></p>
+                    </div>
                 </div>
+            </div>
+            <div class="alert alert-light" role="alert" style="padding: 25px;">
+
+                <!-- 图标和“说明” -->
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <i class="bi bi-info-circle" style="color: #618dee; font-size: 24px; margin-right: 10px;"></i>
+                    <strong style="font-size: 18px;">说明：</strong>
+                </div>
+
+                <!-- 描述列表 -->
+                <ul style="padding-left: 30px; margin-bottom: 0;">
+                    <li>我们的十六进制（即基本的SAES加密），双重加密，三重加密仅支持16 bits的16进制的输入（例如0f0f)。</li>
+                    <li>密钥也是16 bits的16进制（例如0f0f），对于双重加密，三重加密的密钥分别需要32 bits（例如16进制0000214a），
+                        48 bits（例如16进制111122223333）。我们分别前4个作为key1，再4个作为key2,...
+                    </li>
+                    <li>ASCII加密支持任意长度的输入，密钥也是16 bits的16进制（例如0f0f）。</li>
+                </ul>
+
+            </div>
+
+        </div>
+
+        <!-- 破解部分 -->
+        <div class="tab-pane fade" id="crack" role="tabpanel">
+            <div class="section mb-4" style="margin-top: 30px">
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text"><i class="bi bi-file-text"></i></span>
+                            <input type="text" class="form-control plaintext" placeholder="输入明文">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text"><i class="bi bi-file-earmark-lock2"></i></span>
+                            <input type="text" class="form-control ciphertext" placeholder="输入密文">
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <button class="btn btn-primary" id="addPairBtn">
+                            <i class="bi bi-plus-circle-fill"></i> 添加对
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-secondary forceBtn">
+                            <i class="bi bi-tools"></i> 进行破解
+                        </button>
+                    </div>
+                </div>
+                <div id="spinnerOverlay"
+                     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); z-index:1000;">
+                    <div class="d-flex justify-content-center align-items-center h-100">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                            <p class="mt-3 text-white">正在破解，请稍候...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <p><i class="bi bi-list-ul" style="color: #007BFF; font-size: 18px; padding-right: 10px;"></i>
+                            已添加对</p>
+                    </div>
+
+                    <div class="card-body" id="outputAreaPair">
+                        <ul id="pairsList" class="list-group list-group-flush"></ul>
+                    </div>
+                </div>
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <p><i class="bi bi-key" style="color: #007BFF; font-size: 18px; padding-right: 10px;"></i>
+                            破解</p>
+                    </div>
+                    <div class="card-body" id="crackResult">
+
+                    </div>
+                    <div class="card-footer text-muted" id="timeTaken">
+                        <!-- 时间将在这里被显示 -->
+                        所用时间：
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-light" role="alert" style="padding: 25px;">
+
+                <!-- 图标和“说明” -->
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <i class="bi bi-info-circle" style="color: #618dee; font-size: 24px; margin-right: 10px;"></i>
+                    <strong style="font-size: 18px;">说明：</strong>
+                </div>
+
+                <!-- 描述列表 -->
+                <ul style="padding-left: 30px; margin-bottom: 0;">
+                    <li>这里的破解只针对二重加密，采用了中间相遇攻击（Meet-in-the-Middle Attack, MitM）方法实现。</li>
+                    <li>例如如下测试案例：<br>
+                        明文: d72c, 密文: 6d3a<br>
+                        明文: ff00, 密文: 76f7
+                    </li>
+                </ul>
+
             </div>
         </div>
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="input-group mb-3">
-                    <span class="input-group-text"><i class="bi bi-key"></i></span>
-                    <input type="text" class="form-control" id="keyInput" placeholder="请输入密钥">
+
+        <!-- CBC模式部分 -->
+        <div class="tab-pane fade" id="cbcMode" role="tabpanel">
+            <div class="section mb-4" style="margin-top: 30px">
+
+                <!-- 密钥和初始向量输入框 -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <input type="text" class="form-control" id="CBCkey" placeholder="请输入密钥">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text"><i class="bi bi-people-fill"></i></span>
+                            <input type="text" class="form-control" id="ivInput" placeholder="请输入16位初始向量 (IV)">
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div class="input-group mb-3">
-                    <span class="input-group-text"><i class="bi bi-text-left"></i></span>
-                    <input type="text" class="form-control" id="textInput"
-                           placeholder="请输入bit或者字符">
+
+                <!-- 长明文输入框 -->
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <h5>加密的长明文</h5>
+                        <textarea class="form-control" id="longTextInput" rows="4"
+                                  placeholder="请输入要加密的长明文"></textarea>
+                    </div>
                 </div>
+
+                <!-- 操作按钮 -->
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <button id="encryptCBCBtn" class="btn btn-primary"><i class="bi bi-lock-fill"></i> CBC加密
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-light" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseCipherTextEdit" aria-expanded="false"
+                                aria-controls="collapseCipherTextEdit">
+                            <i class="bi bi-pencil-square"></i>
+                            篡改或添加密文解密
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button id="decryptCBCBtn" class="btn btn-secondary"><i class="bi bi-unlock-fill"></i> CBC解密
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 密文修改区域（使用Bootstrap的Collapse组件） -->
+                <div class="collapse mt-4" id="collapseCipherTextEdit">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h5>篡改密文：</h5>
+                            <textarea class="form-control" id="cipherTextEdit" rows="4"
+                                      placeholder="密文会在这里显示，你可以对其进行修改或者添加"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 结果区域 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <p><i class="bi bi-stars" style="color: #b95ef6; font-size: 18px; padding-right: 10px;"></i>
+                            结果</p>
+                    </div>
+                    <div class="card-body" id="CBCoutput">
+                        <p id="CBCoutputText"></p>
+                    </div>
+                </div>
+
+            </div>
+            <div class="alert alert-light" role="alert" style="padding: 25px;">
+
+                <!-- 图标和“说明” -->
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <i class="bi bi-info-circle" style="color: #618dee; font-size: 24px; margin-right: 10px;"></i>
+                    <strong style="font-size: 18px;">说明：</strong>
+                </div>
+
+                <!-- 描述列表 -->
+                <ul style="padding-left: 30px; margin-bottom: 0;">
+                    <li>
+                        <strong>CBC模式：</strong> CBC（Cipher Block
+                        Chaining）是一种加密模式，其中每个明文块在加密之前与前一个密文块进行异或。这样可以确保即使两个明文块相同，它们的密文块也不同。
+                    </li>
+                    <li>
+                        <strong>密钥和初始向量 (IV)：</strong> 为了开始CBC模式的加密，您需要提供一个密钥和一个初始向量（IV），例如2d55和3e8d。
+                    </li>
+                    <li>
+                        <strong>长明文输入：</strong>
+                        在这里输入您希望加密的文本，例如f0ff123456789abcdef130b34e8a207d。请注意，CBC模式可能需要明文的长度是密钥长度的倍数。
+                    </li>
+                    <li>
+                        <strong>篡改密文：</strong> 一旦您有了密文，您可以选择修改它来查看如何影响解密结果。这可以帮助您理解篡改密文如何破坏加密信息。
+                    </li>
+                    <li>
+                        <strong>操作按钮：</strong> 使用“CBC加密”按钮进行加密操作，使用“CBC解密”按钮进行解密操作。您还可以点击“篡改密文”按钮来展开或折叠添加密文或密文编辑区域。
+                    </li>
+                    <li>
+                        <strong>篡改密文的影响：</strong>
+                        我们尝试修改了密文的第一个块，并观察到解密的结果与原始明文有明显的差异，尤其是在被修改的块位置。这显示了CBC模式的一个特点，即对一个块的篡改会影响到该块和下一个块的解密结果。但是，它不会影响到后续的其他块。
+                    </li>
+                </ul>
+
             </div>
         </div>
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <button id="encryptBtn" class="btn btn-primary"><i class="bi bi-lock-fill"></i> 加密</button>
-            </div>
-            <div class="col-md-6">
-                <button id="decryptBtn" class="btn btn-secondary"><i class="bi bi-unlock-fill"></i> 解密</button>
-            </div>
-        </div>
-        <div class="card mt-4">
-            <div class="card-header">
-                <p>结果</p>
-            </div>
-            <div class="card-body" id="outputAreaCard">
-                <p id="outputText"></p>
-            </div>
-        </div>
+
     </div>
 
-    <!-- 添加破解部分 -->
-    <hr class="my-4">
-    <div class="section mb-4">
-        <h3>破解</h3>
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="input-group mb-3">
-                    <span class="input-group-text"><i class="bi bi-file-text"></i></span>
-                    <input type="text" class="form-control plaintext" placeholder="输入明文">
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="input-group mb-3">
-                    <span class="input-group-text"><i class="bi bi-file-earmark-lock2"></i></span>
-                    <input type="text" class="form-control ciphertext" placeholder="输入密文">
-                </div>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <button class="btn btn-success" id="addPairBtn">
-                    <i class="bi bi-plus-circle-fill"></i> 添加对
-                </button>
-            </div>
-            <div class="col-md-6">
-                <button class="btn btn-danger forceBtn">
-                    <i class="bi bi-dash-circle-fill"></i> 进行破解
-                </button>
-            </div>
-        </div>
-        <div class="card mt-4">
-            <div class="card-header">
-                <p>已添加对</p>
-            </div>
-            <div class="card-body" id="outputAreaPair">
-                <ul id="pairsList" class="list-group list-group-flush"></ul>
-            </div>
-        </div>
-        <div class="card mt-4">
-            <div class="card-header">
-                <p>所有找到的密钥</p>
-            </div>
-            <div class="card-body">
-                <ul id="keysList" class="list-group list-group-flush"></ul>
-            </div>
-            <div class="card-footer text-muted" id="timeTaken">
-                <!-- 时间将在这里被显示 -->
-            </div>
-        </div>
-    </div>
-    <hr class="my-4">
-    <!-- CBC模式部分 -->
-    <div class="section mb-4">
-        <h3>CBC模式 - S-AES加密/解密</h3>
+    <footer class="py-4">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-12 text-center">
 
-        <!-- 初始向量输入框 -->
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <div class="input-group mb-3">
-                    <span class="input-group-text"><i class="bi bi-vinyl"></i></span>
-                    <input type="text" class="form-control" id="ivInput" placeholder="请输入16位初始向量 (IV)">
+                    <!-- GitHub Icon and Link -->
+                    <a href="https://github.com/HJingCheng/S-AES" class="btn btn-link">
+                        <i class="bi bi-github"></i>
+                    </a>
+
+                    <!-- Email Icon and Link -->
+                    <a href="mailto:3099626337@qq.com" class="btn btn-link">
+                        <i class="bi bi-envelope-open"></i>
+                    </a>
+
                 </div>
             </div>
         </div>
-
-        <!-- 长明文输入框 -->
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <textarea class="form-control" id="longTextInput" rows="4"
-                          placeholder="请输入要加密的长明文"></textarea>
-            </div>
-        </div>
-
-        <!-- 加密按钮 -->
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <button id="encryptCBCBtn" class="btn btn-primary"><i class="bi bi-lock-fill"></i> CBC加密</button>
-            </div>
-            <div class="col-md-6">
-                <button id="decryptCBCBtn" class="btn btn-secondary"><i class="bi bi-unlock-fill"></i> CBC解密</button>
-            </div>
-        </div>
-
-        <!-- 密文修改区域 -->
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <h5>篡改密文：</h5>
-                <textarea class="form-control" id="cipherTextEdit" rows="4"
-                          placeholder="密文会在这里显示，你可以对其进行修改"></textarea>
-            </div>
-        </div>
-
-        <!-- 解密结果显示区 -->
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <h5>解密结果：</h5>
-                <p id="decryptedTextOutput"></p>
-            </div>
-        </div>
-    </div>
+    </footer>
+    <!-- Tab内容结束 -->
     <div class="toast" id="emptyToast" role="alert" aria-live="assertive" aria-atomic="true"
          style="position: fixed; top: 20px; right: 20px;">
         <div class="toast-header">
-            <strong class="me-auto"><i class="bi bi-exclamation-circle-fill" style="color: #f5d701"></i> 通知</strong>
+            <strong class="me-auto"><i class="bi bi-exclamation-circle-fill" style="color: #f85669"></i> 通知</strong>
             <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
         <div class="toast-body" id="toastBody">
@@ -181,6 +354,8 @@
 </div>
 
 <script src="/static/js/bootstrap.bundle.min.js"></script>
-<script src="/js/encrypt.js"></script>
+<script src="/static/js/encrypt.js"></script>
+<script src="/static/js/crack.js"></script>
+<script src="/static/js/cbc.js"></script>
 </body>
 </html>
